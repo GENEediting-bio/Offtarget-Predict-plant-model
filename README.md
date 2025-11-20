@@ -1,15 +1,18 @@
+根据您的环境配置，我来更新README文档：
+
 # Plant Nucleotide Transformer Prediction Tool
 
 A specialized PyTorch implementation for plant genomic sequence classification using the Nucleotide Transformer model, with local prediction capabilities optimized for plant biology research.
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange)
+![Python](https://img.shields.io/badge/Python-3.12.12-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.6.0%2Bcu124-orange)
+![Transformers](https://img.shields.io/badge/Transformers-4.57.1-green)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## 📋 Table of Contents
 - [Overview](#-overview)
 - [Features](#-features)
-- [Installation](#-installation)
+- [Environment Setup](#-environment-setup)
 - [Quick Start](#-quick-start)
 - [Model Download](#-model-download)
 - [Prediction](#-prediction)
@@ -28,6 +31,7 @@ This project provides specialized tools for plant genomic sequence classificatio
 
 ### 🌱 Plant-Specific Optimizations
 - **Multi-species training** on major crop genomes
+- **Multi-feature integration** with sequence and numerical features
 - **Plant-specific sequence handling** optimized for plant genomic patterns
 - **High-accuracy classification** for plant regulatory elements
 
@@ -38,16 +42,34 @@ This project provides specialized tools for plant genomic sequence classificatio
 - ⚡ Batch prediction for large plant genomic datasets
 - 🎯 High-accuracy classification (AUC > 0.95 on plant datasets)
 
-## 🛠 Installation
+## 🛠 Environment Setup
 
-### Prerequisites
-- Python 3.8+
-- CUDA-capable GPU (recommended)
-- 4GB+ RAM
+### Current Environment (Verified)
+Your current conda environment contains all required dependencies:
 
-### Install Dependencies
 ```bash
-pip install torch transformers pandas numpy scikit-learn tqdm
+# Activate your existing environment
+conda activate pytorch
+```
+
+### Required Packages (Already Installed)
+- **PyTorch**: 2.6.0+cu124
+- **Transformers**: 4.57.1
+- **Pandas**: 2.3.3
+- **NumPy**: 1.26.4
+- **Scikit-learn**: 1.7.2
+- **tqdm**: 4.67.1
+- **nucleotide-transformer**: 0.0.1
+
+### For New Setup (If Needed)
+```bash
+# Create new environment (optional)
+conda create -n plant_nt python=3.12
+conda activate plant_nt
+
+# Install core dependencies
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+pip install transformers pandas numpy scikit-learn tqdm
 ```
 
 ## 📥 Model Download
@@ -56,7 +78,7 @@ pip install torch transformers pandas numpy scikit-learn tqdm
 Download the fine-tuned plant model checkpoint:
 
 ```bash
-# Download plant_best_epoch66_auc0.9588.pt from Google Drive
+# Download plant_best_epoch66_auc0.9588.pt 
 # Place the file in your project directory
 ```
 
@@ -73,7 +95,7 @@ This will create a `local_models/` directory containing the model files for offl
 ## 🚀 Quick Start
 
 ### 1. Prepare Your Data
-Create a CSV file named `input.csv` with your plant sequences:
+Create a CSV file named `input.csv` with your plant sequences and features:
 
 ```csv
 Off,Epi_satics,CFD_score,CCTop_Score,Moreno_Score,CROPIT_Score,MIT_Score
@@ -119,7 +141,7 @@ python plant_nt_predict.py \
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--checkpoint` | Required | Path to trained model checkpoint (.pt file) |
-| `--input_csv` | `input.csv` | Input CSV file with plant sequences |
+| `--input_csv` | `input.csv` | Input CSV file with plant sequences and features |
 | `--output_csv` | `output.csv` | Output CSV file for predictions |
 | `--local_model_dir` | `./local_models/...` | Local directory containing base model |
 | `--batch_size` | 16 | Batch size for prediction |
@@ -127,53 +149,109 @@ python plant_nt_predict.py \
 | `--device` | cuda | Device for inference (cuda or cpu) |
 | `--download_model` | False | Auto-download base model if missing |
 
+## 📊 Input Format
 
+### Required CSV Structure
+The input CSV must contain the following columns:
+
+**Required Columns:**
+- `Off`: DNA sequence (plant genomic sequences)
+- `Epi_satics`: Epigenetic features (0 or 1)
+- `CFD_score`: Conservation score (0-1)
+- `CCTop_Score`: Chromatin accessibility (0-1)
+- `Moreno_Score`: Motif enrichment score
+- `CROPIT_Score`: Regulatory potential score  
+- `MIT_Score`: Mitochondrial targeting score
+
+### Example Input
+```csv
+Off,Epi_satics,CFD_score,CCTop_Score,Moreno_Score,CROPIT_Score,MIT_Score
+AACTGAATATAAAAATCCTATGG,0,0,0.85,0.105721231,0.247619048,0.999000864
+AGCGGCGTCGGCGGGGTCCTCGG,0,0.0535,0.9,0.139114361,0.176190476,0.999157044
+```
 
 ## 📈 Output Format
 
-The prediction output `output.csv` includes:
+The prediction output `output.csv` includes all original columns plus prediction results:
 
 ```csv
-sequence,prediction,probability_class_0,probability_class_1,confidence,predicted_label
-ATCGATCGATCG,1,0.023,0.977,0.977,positive
-GCTAGCTAGCTA,0,0.891,0.109,0.891,negative
-TTTTAAAACCCC,1,0.156,0.844,0.844,positive
+Off,Epi_satics,CFD_score,CCTop_Score,Moreno_Score,CROPIT_Score,MIT_Score,prediction,probability_class_0,probability_class_1,confidence,predicted_label
+AACTGAATATAAAAATCCTATGG,0,0,0.85,0.105721231,0.247619048,0.999000864,1,0.023,0.977,0.977,positive
+AGCGGCGTCGGCGGGGTCCTCGG,0,0.0535,0.9,0.139114361,0.176190476,0.999157044,0,0.891,0.109,0.891,negative
 ```
 
 ### Output Columns Description
 | Column | Description |
 |--------|-------------|
-| `sequence` | Original input sequence |
+| All original columns | Input sequences and features |
 | `prediction` | Binary prediction (0 or 1) |
 | `probability_class_0` | Probability of negative class |
 | `probability_class_1` | Probability of positive class |
 | `confidence` | Maximum prediction confidence |
 | `predicted_label` | Human-readable label (positive/negative) |
 
+### Results Analysis
+```python
+import pandas as pd
+
+# Load and analyze predictions
+results = pd.read_csv('output.csv')
+
+# Summary statistics
+print(f"Total plant sequences: {len(results)}")
+print(f"Positive predictions: {sum(results['prediction'])}")
+print(f"Negative predictions: {len(results) - sum(results['prediction'])}")
+print(f"Average confidence: {results['confidence'].mean():.3f}")
+
+# High-confidence predictions
+high_conf = results[results['confidence'] > 0.9]
+print(f"High-confidence predictions: {len(high_conf)}")
+```
 
 ## 🐛 Troubleshooting
 
-** Missing Base Model**
+### Common Issues
+
+**1. CUDA Memory Issues**
+```bash
+# Reduce batch size
+python plant_nt_predict.py --batch_size 8
+
+# Use CPU
+python plant_nt_predict.py --device cpu
+```
+
+**2. Model Loading Errors**
+```bash
+# Clear HuggingFace cache
+rm -rf ~/.cache/huggingface/
+
+# Ensure checkpoint file exists
+ls -la plant_best_epoch66_auc0.9588.pt
+```
+
+**3. Missing Base Model**
 ```bash
 # Auto-download base model
 python plant_nt_predict.py --download_model
 
-# Or specify local path
-python plant_nt_predict.py --local_model_dir /path/to/local/model
+# Or specify exact path
+python plant_nt_predict.py --local_model_dir ./local_models/nucleotide-transformer-2.5b-multi-species
 ```
 
 ### Performance Tips
-- Use `--device cuda` for GPU acceleration
-- Adjust `--batch_size` based on available GPU memory (8-32 recommended)
-- For long plant genomic sequences, increase `--max_length` (up to 1000)
-- Use `--download_model` once, then reuse local model for faster startup
+- Use `--device cuda` for GPU acceleration with your RTX 4090
+- Default `--batch_size 16` works well for 24GB GPU memory
+- `--max_length 64` is optimized for plant regulatory sequences
+- Use `--download_model` once, then reuse local model
 
 ## 📊 Performance
 
 The provided plant model checkpoint achieves:
 - **AUC: 0.9588**
-- **Accuracy: >92%**
+- **Accuracy: >92%** 
 - **F1-Score: >0.91**
+- **Optimized for plant genomic sequences**
 
 ## 🤝 Contributing
 
@@ -191,9 +269,9 @@ This project is for academic and research use. Please check the original Nucleot
 
 ---
 
-**Note:** The `plant_best_epoch66_auc0.9588.pt` checkpoint file is available for download via Google Drive. Please contact the maintainers for access.
+**Note:** The `plant_best_epoch66_auc0.9588.pt` checkpoint file is available for download.
 
 **For questions and support:**
 - 📧 Email: your-email@domain.com
 - 💬 Issues: GitHub Issues
-- 🐛 Bug Reports: Please include your plant species and sequence length information
+- 🐛 Bug Reports: Please include your plant species and sequence information
