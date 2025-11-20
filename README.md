@@ -76,10 +76,12 @@ This will create a `local_models/` directory containing the model files for offl
 Create a CSV file named `input.csv` with your plant sequences:
 
 ```csv
-sequence
-ATCGATCGATCG
-GCTAGCTAGCTA
-TTTTAAAACCCC
+Off,Epi_satics,CFD_score,CCTop_Score,Moreno_Score,CROPIT_Score,MIT_Score
+AACTGAATATAAAAATCCTATGG,0,0,0.85,0.105721231,0.247619048,0.999000864
+AGCGGCGTCGGCGGGGTCCTCGG,0,0.0535,0.9,0.139114361,0.176190476,0.999157044
+AGAGGAGATTTTAGCTGCTTTGG,1,0.0937,0.905,0.109747353,0.147619048,0.996678771
+GAAGAAGAGGGTGCTGTTCGCGG,0,0,0.885,0.17321379,0.19047619,0.979384701
+GCTTGGCCACAAGGCATTGCGAG,1,0.0281,0.96,0.253765489,0.114285714,0.993211988
 ```
 
 ### 2. Run Prediction
@@ -107,9 +109,9 @@ python plant_nt_predict.py \
     --checkpoint plant_best_epoch66_auc0.9588.pt \
     --input_csv input.csv \
     --output_csv output.csv \
-    --local_model_dir ./local_models/nucleotide-transformer-500m-1000g \
+    --local_model_dir ./local_models/nucleotide-transformer-2.5b-multi-species \
     --batch_size 32 \
-    --max_length 512 \
+    --max_length 64 \
     --device cuda
 ```
 
@@ -121,47 +123,11 @@ python plant_nt_predict.py \
 | `--output_csv` | `output.csv` | Output CSV file for predictions |
 | `--local_model_dir` | `./local_models/...` | Local directory containing base model |
 | `--batch_size` | 16 | Batch size for prediction |
-| `--max_length` | 512 | Maximum sequence length |
+| `--max_length` | 64 | Maximum sequence length |
 | `--device` | cuda | Device for inference (cuda or cpu) |
 | `--download_model` | False | Auto-download base model if missing |
 
-## 📊 Input Format
 
-### Required CSV Structure
-The input CSV should contain at least one column with plant DNA/RNA sequences:
-
-```csv
-sequence
-ATCGATCGATCGATCG
-GCTAGCTAGCTAGCTA
-TTTTAAAACCCCGGGG
-```
-
-### Supported Column Names
-The script automatically detects sequence columns with these names:
-- `sequence`
-- `seq` 
-- `dna`
-- `rna`
-
-Or uses the first column if no matches found.
-
-### Example Input File
-```python
-import pandas as pd
-
-# Create plant sequence dataset
-data = {
-    'sequence': [
-        'ATCGATCGATCGATCGATCG',  # Plant promoter sequence
-        'GCTAGCTAGCTAGCTAGCTA',  # Plant genomic sequence
-        'TTTTAAAACCCCGGGGATAT',  # Another plant sequence
-    ]
-}
-
-df = pd.DataFrame(data)
-df.to_csv('input.csv', index=False)
-```
 
 ## 📈 Output Format
 
@@ -184,47 +150,10 @@ TTTTAAAACCCC,1,0.156,0.844,0.844,positive
 | `confidence` | Maximum prediction confidence |
 | `predicted_label` | Human-readable label (positive/negative) |
 
-### Results Analysis
-```python
-import pandas as pd
-
-# Load and analyze predictions
-results = pd.read_csv('output.csv')
-
-# Summary statistics
-print(f"Total plant sequences: {len(results)}")
-print(f"Positive predictions: {sum(results['prediction'])}")
-print(f"Negative predictions: {len(results) - sum(results['prediction'])}")
-print(f"Average confidence: {results['confidence'].mean():.3f}")
-
-# High-confidence predictions
-high_conf = results[results['confidence'] > 0.9]
-print(f"High-confidence predictions: {len(high_conf)}")
-```
 
 ## 🐛 Troubleshooting
 
-### Common Issues
-
-**1. Model Loading Errors**
-```bash
-# Ensure the checkpoint file exists
-ls -la plant_best_epoch66_auc0.9588.pt
-
-# Clear cache and retry
-rm -rf ~/.cache/huggingface/transformers/
-```
-
-**2. CUDA Out of Memory**
-```bash
-# Reduce batch size
-python plant_nt_predict.py --batch_size 8
-
-# Or use CPU
-python plant_nt_predict.py --device cpu
-```
-
-**3. Missing Base Model**
+** Missing Base Model**
 ```bash
 # Auto-download base model
 python plant_nt_predict.py --download_model
